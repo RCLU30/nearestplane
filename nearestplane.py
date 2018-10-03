@@ -1,21 +1,33 @@
-from urllib.request import urlopen
-# from math import acos, sin, cos, radians
-import json
-import math
+from math import acos, sin, cos, radians, sqrt
 import requests
 
-EARTHRADIUS = 6353
+EARTHRADIUS = 6353 # in kilometers
 
 def find_closest_plane(latitude, longitude):
     """
     Input: longitude (y) and latitude(x)
     Ouput: information on the nearest plane based on input long/lat coord
     """
-    print(f"Input:\n >> latitude: {latitude}, longitude: {longitude}\n")
-    #look for planes +/-1 degree of target coordinates
-    baseurl = f"https://opensky-network.org/api/states/all?lamin={latitude-1}&lomin={longitude-1}&lamax={latitude+1}&lomax={longitude+1}"
-    # r = requests.get(baseurl)
-    listplanes = requests.get(baseurl).json()['states']
+    print(f">> Input coordinates:\n>> Latitude: {latitude}\n>> Longitude: {longitude}\n")
+
+    lamin = latitude
+    lomin = longitude
+    lamax = latitude
+    lomax = longitude
+
+    while True:
+        #look for planes +/-1 degree of target coordinates
+        # perform search and expand range of search until planes are found
+        lamin -= 1
+        lomin -= 1
+        lamax += 1
+        lomax += 1
+        baseurl = f"https://opensky-network.org/api/states/all?lamin={lamin}&lomin={lomin}&lamax={lamax}&lomax={lomax}"
+        # r = requests.get(baseurl)
+        listplanes = requests.get(baseurl).json()['states']
+        if listplanes:
+            break
+
     distances = []
     shortest_distance = 0
     shortest_index = ''
@@ -29,21 +41,34 @@ def find_closest_plane(latitude, longitude):
     shortest_distance = (min(distances))
     shortest_index = distances.index(shortest_distance)
     nearestPlane = listplanes[shortest_index]
-    print(f"Shortest distance is {shortest_distance}.")
-    print(f"""
-Geodesic distance: {shortest_distance}
-Callsign: {nearestPlane[1]}
-Lattitude and Longitude: {nearestPlane[6]}, {nearestPlane[5]}
-Geometric Altitude: {nearestPlane[7]}
-Country of origin: {nearestPlane[2]}
-ICAO24 ID: {nearestPlane[0]}
-    """)
+    print(f""">> Geodesic distance(approximate): {shortest_distance} meters
+>> Callsign: {nearestPlane[1]}
+>> Lattitude and Longitude: {nearestPlane[6]}, {nearestPlane[5]}
+>> Geometric Altitude: {nearestPlane[7]}
+>> Country of origin: {nearestPlane[2]}
+>> ICAO24 ID: {nearestPlane[0]}""")
 
+# distance coordinates using euclidian calculation
+# def geo_distance(x, y, planex, planey):
+#     return sqrt((planey-y)**2 + (planex-x)**2)
 
-# calculates geometric distance between input coordinates and plane coordinates
+# distance coordinates using geodesic calculation
 def geo_distance(x, y, planex, planey):
-    # delta = acos(sin(latcoord)*sin(x) + cos(longcoord) * cos(y) * cos())
-    return math.sqrt((planey-y)**2 + (planex-x)**2)
+    xrad = radians(x)
+    yrad = radians(y)
+    planexrad = radians(planex)
+    planeyrad = radians(planey)
+    return EARTHRADIUS * acos(sin(xrad) 
+            * sin(yrad) 
+            + cos(xrad) 
+            * sin(yrad) 
+            * cos(abs(planexrad - planeyrad)))
 
-
+# eiffel tower
 find_closest_plane(48.8584, 2.2945)
+
+# jfk aiport
+# find_closest_plane(40.6413, -73.7781
+
+#random location in canada
+# find_closest_plane(48.6413, -73.7781)
